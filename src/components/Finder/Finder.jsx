@@ -55,10 +55,13 @@ export const Finder = () => {
             if (data.totalHits === 0) {
                 return toast(`Sorry, we hadn't found images for "${searchInput}", please, enter another query :)`)
             }
+            
+            setItems(prev => [...prev, ...data.hits])
 
-            const newTotalCount = totalQuantity + 12;
-            setItems([...items, ...data.hits])
-            setTotalQuantity(newTotalCount)
+            // const newTotalCount = totalQuantity + 12;
+            // setTotalQuantity(newTotalCount) --------- варіант 1: як зробити так щоб totalQuantity не потребувало в залежностях? бо з ним зациклюється рендер, а без нього помилка: "React Hook useEffect has a missing dependency: 'totalQuantity'. Either include it or remove the dependency array"
+
+            // setTotalQuantity(prev => prev + 12) ------ варіант 2: як тоді передати це отримане значення в if на рядку 65? + помилка  "'totalQuantity' is assigned a value but never used"
             
             if (newTotalCount < data.totalHits) {
                 setLoadMore(true)
