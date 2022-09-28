@@ -1,74 +1,53 @@
-import React, { Component } from "react";
+import { useState, useEffect } from "react";
 import { ToastContainer, toast } from 'react-toastify';
 import { searchImages } from '../../shared/api/images';
 
-import Searchbar from "./Searchbar/Searchbar";
-import {ImageGallery} from "./ImageGallery/ImageGallery";
-import {Button} from "./Button/Button";
-import {Loader} from "./Loader/Loader";
+import { Searchbar } from "./Searchbar/Searchbar";
+import { ImageGallery } from "./ImageGallery/ImageGallery";
+import { Button } from "./Button/Button";
+import { Loader } from "./Loader/Loader";
 import { Modal } from "./Modal/Modal";
 
-export default class Finder extends Component {
-    state = {
-        items: [],
-        searchInput: '',
-        loading: false,
-        error: null,
-        page: 1,
-        totalQuantity: 0,
-        loadMore: false,
-        modal: false,
-        dataModal: {},
-    }
-
-    onModalOpen = (id) => {
-        const imageToOpen = this.state.items.find(item => item.id === id);
-        
-        this.setState({
-            modal: true,
-            dataModal: imageToOpen,
-        })
-        document.addEventListener('click', this.onModalClose)
-        document.addEventListener('keydown', this.onModalClose)
-    }
-
-    onModalClose = (e) => {
+export const Finder = () => {
+    const [items, setItems] = useState([]);
+    const [searchInput, setSearchInput] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [page, setPage] = useState(1);
+    const [totalQuantity, setTotalQuantity] = useState(0);
+    const [loadMore, setLoadMore] = useState(false);
+    const [modal, setModal] = useState(false);
+    const [dataModal, setDataModal] = useState({});
+    
+    const onModalClose = (e) => {
         if (e.currentTarget === e.target || e.code === 'Escape') {
-            this.setState({modal: false,})
-            document.removeEventListener('click', this.onModalClose)
-            document.removeEventListener('keydown', this.onModalClose)
+            setModal(false)
+            document.removeEventListener('click', onModalClose)
+            document.removeEventListener('keydown', onModalClose)
         }
     }
 
-    onLoadMoreClick = () => {
-        this.setState(({ page }) => {
-            return {
-                page: page + 1
-            }
-        })
+    const onModalOpen = (id) => {
+        const imageToOpen = items.find(item => item.id === id);
+
+        setModal(true)
+        setDataModal(imageToOpen)
+
+        document.addEventListener('click', onModalClose)
+        document.addEventListener('keydown', onModalClose)
     }
 
-    componentDidUpdate(_, prevState) {
-        if (prevState.searchInput !== this.state.searchInput || prevState.page !== this.state.page) {
-            this.fetchImages();
+    const onLoadMoreClick = () => {
+        setPage(page + 1)
+    }
+
+    useEffect(() => {
+        if (searchInput === '') {
+            return
         }
-    }
 
-    handleFormSubmit = input => {
-        if (input !== this.state.searchInput) {
-            this.setState({
-                items: [],
-                searchInput: input,
-                page: 1,
-                totalQuantity: 0,
-                loadMore: false
-        });
-        }
-    }
-
-    fetchImages = async () => {
-        const { searchInput, page, totalQuantity } = this.state;
-        this.setState({loading: true});
+        const fetchImages = async () => {
+        setLoading(true)
 
         try {
             const data = await searchImages(searchInput, page);
@@ -78,40 +57,44 @@ export default class Finder extends Component {
             }
 
             const newTotalCount = totalQuantity + 12;
-            this.setState(({items}) => {
-                return {
-                    items: [...items, ...data.hits],
-                    totalQuantity: newTotalCount,
-                }
-            })
+            setItems([...items, ...data.hits])
+            setTotalQuantity(newTotalCount)
             
             if (newTotalCount < data.totalHits) {
-                this.setState({loadMore: true})
+                setLoadMore(true)
             } else {
-                this.setState({loadMore: false})
+                setLoadMore(false)
             }
 
         } catch (error) {
-            this.setState({error})
+            setError(error)
         }
         finally {
-            this.setState({loading: false})
+            setLoading(false)
+        }
+    }
+        fetchImages();
+    }, [searchInput, page])
+
+    const handleFormSubmit = input => {
+        if (input !== searchInput) {
+            setItems([])
+            setSearchInput(input)
+            setPage(1)
+            setTotalQuantity(0)
+            setLoadMore(false)
         }
     }
 
-    render() {
-        const { items, modal, loading, loadMore, dataModal, error } = this.state;
-        const { handleFormSubmit, onModalOpen, onLoadMoreClick, onModalClose } = this;
-        const isData = Boolean(items.length);
-        
-        return <>
-            <Searchbar onSubmit={handleFormSubmit} />
-            {error && <p>Oops! Something went wrong :( Please, reload page and try again</p>}
-            {isData && <ImageGallery modalOpen={onModalOpen} data={items} />}
-            {loadMore && <Button onClick={onLoadMoreClick} />}
-            {loading && <Loader />}
-            {modal && <Modal data={dataModal} onClose={onModalClose} />}
-            <ToastContainer autoClose={2000}/>
-        </>
-    }
+    const isData = Boolean(items.length);
+    
+    return (<>
+        <Searchbar onSubmit={handleFormSubmit} />
+        {error && <p>Oops! Something went wrong :( Please, reload page and try again</p>}
+        {isData && <ImageGallery modalOpen={onModalOpen} data={items} />}
+        {loadMore && <Button onClick={onLoadMoreClick} />}
+        {loading && <Loader />}
+        {modal && <Modal data={dataModal} onClose={onModalClose} />}
+        <ToastContainer autoClose={2000}/>
+    </>)
 }
