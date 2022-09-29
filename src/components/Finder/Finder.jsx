@@ -15,7 +15,7 @@ export const Finder = () => {
     const [error, setError] = useState(null);
     const [page, setPage] = useState(1);
     const [totalQuantity, setTotalQuantity] = useState(0);
-    const [loadMore, setLoadMore] = useState(false);
+    const [total, setTotal] = useState(0);
     const [modal, setModal] = useState(false);
     const [dataModal, setDataModal] = useState({});
     
@@ -38,7 +38,7 @@ export const Finder = () => {
     }
 
     const onLoadMoreClick = () => {
-        setPage(page + 1)
+        setPage(prev => prev + 1)
     }
 
     useEffect(() => {
@@ -55,19 +55,10 @@ export const Finder = () => {
             if (data.totalHits === 0) {
                 return toast(`Sorry, we hadn't found images for "${searchInput}", please, enter another query :)`)
             }
-            
+
             setItems(prev => [...prev, ...data.hits])
-
-            // const newTotalCount = totalQuantity + 12;
-            // setTotalQuantity(newTotalCount) --------- варіант 1: як зробити так щоб totalQuantity не потребувало в залежностях? бо з ним зациклюється рендер, а без нього помилка: "React Hook useEffect has a missing dependency: 'totalQuantity'. Either include it or remove the dependency array"
-
-            // setTotalQuantity(prev => prev + 12) ------ варіант 2: як тоді передати це отримане значення в if на рядку 65? + помилка  "'totalQuantity' is assigned a value but never used"
-            
-            if (newTotalCount < data.totalHits) {
-                setLoadMore(true)
-            } else {
-                setLoadMore(false)
-            }
+            setTotalQuantity(prev => prev + 12)
+            setTotal(data.totalHits)
 
         } catch (error) {
             setError(error)
@@ -85,13 +76,14 @@ export const Finder = () => {
             setSearchInput(input)
             setPage(1)
             setTotalQuantity(0)
-            setLoadMore(false)
+            setTotal(0)
         }
     }
 
+    const loadMore = totalQuantity < total && loading === false && items.length > 0;
     const isData = Boolean(items.length);
     
-    return (<>
+    return <>
         <Searchbar onSubmit={handleFormSubmit} />
         {error && <p>Oops! Something went wrong :( Please, reload page and try again</p>}
         {isData && <ImageGallery modalOpen={onModalOpen} data={items} />}
@@ -99,5 +91,5 @@ export const Finder = () => {
         {loading && <Loader />}
         {modal && <Modal data={dataModal} onClose={onModalClose} />}
         <ToastContainer autoClose={2000}/>
-    </>)
+    </>
 }
